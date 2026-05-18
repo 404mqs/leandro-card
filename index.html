@@ -394,14 +394,24 @@
         'END:VCARD'
       ].join('\r\n');
 
-      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      var isIOS     = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      var isAndroid = /Android/i.test(navigator.userAgent);
+
       if (isIOS) {
+        // iOS Safari: navegar a data URI → la app Contactos lo intercepta
         window.location.href = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcard);
+      } else if (isAndroid) {
+        // Android: navegar al blob URL sin atributo download → el SO lo abre con Contactos
+        var blob = new Blob([vcard], { type: 'text/vcard' });
+        var url  = URL.createObjectURL(blob);
+        window.location.href = url;
+        setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
       } else {
+        // Desktop: forzar descarga del .vcf
         var blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href   = url;
         a.download = 'leandro-montedonico.vcf';
         document.body.appendChild(a);
         a.click();
